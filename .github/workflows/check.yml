@@ -197,6 +197,21 @@ jobs:
         if: env.need_update == 1
         run: |
           export PATH=$PATH:$(pwd)/tools/bin
+          PATH=$PATH:$(pwd)/tools/bin bash tools/bin/fastbootd_adb_patch.sh
+          mkdir recovery_patched && cd recovery_patched
+          cp ../recovery_patched.img recovery.img
+          lz4 -B6 --content-size -q --rm recovery.img recovery.img.lz4
+          tar -c --format=gnu -f "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" -- *.lz4
+          CHECKSUM="$(md5sum "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" | cut -d " " -f 1 | sed 's/ //')"
+          echo -n "$CHECKSUM" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
+            && echo "  ${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
+            && mv "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" "../${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar.md5"
+          cd ..
+
+      - name: Generate fastbootD recovery
+        if: env.need_update == 1
+        run: |
+          export PATH=$PATH:$(pwd)/tools/bin
           PATH=$PATH:$(pwd)/tools/bin bash tools/bin/fastbootd_patch.sh
           mkdir recovery_patched && cd recovery_patched
           cp ../recovery_patched.img recovery.img
@@ -263,3 +278,4 @@ jobs:
             recovery.img
             lpdump
             ${{ env.latest_shortversion }}_recovery_fastbootd.tar.md5
+            ${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar.md5
