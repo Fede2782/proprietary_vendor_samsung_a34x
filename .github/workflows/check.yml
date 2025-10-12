@@ -206,7 +206,7 @@ jobs:
           echo -n "$CHECKSUM" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
             && echo "  ${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
             && mv "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" "../${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar.md5"
-          cd ..
+          cd .. && rm -rf recovery_patched
 
       - name: Generate fastbootD recovery
         if: env.need_update == 1
@@ -221,7 +221,7 @@ jobs:
           echo -n "$CHECKSUM" >> "${{ env.latest_shortversion }}_recovery_fastbootd.tar" \
             && echo "  ${{ env.latest_shortversion }}_recovery_fastbootd.tar" >> "${{ env.latest_shortversion }}_recovery_fastbootd.tar" \
             && mv "${{ env.latest_shortversion }}_recovery_fastbootd.tar" "../${{ env.latest_shortversion }}_recovery_fastbootd.tar.md5"
-          cd ..
+          cd .. && rm -rf recovery_patched
 
       - name: Prepare AP and BL for release
         if: env.need_update == 1
