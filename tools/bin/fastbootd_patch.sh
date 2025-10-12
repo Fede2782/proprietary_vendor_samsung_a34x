@@ -56,7 +56,7 @@ sed -i 's/persist\.sys\.usb\.config\=mtp/persist\.sys\.usb\.config\=adb/g' prop.
 sed -i 's/ro\.adb\.secure\=1/ro\.adb\.secure\=0/g' prop.default
 #sed -i 's/ro\.debuggable\=0/ro\.debuggable\=1/g' prop.default
 magiskboot cpio $ramdisk 'add 0644 prop.default prop.default'
-#cp $HOME/Projects/a34x_permissive_6.6.102 kernel
+cp ../tools/bin/a34x_permissive_kernel_6.6.102 kernel
 magiskboot repack ../r.img new-boot.img
 cp new-boot.img ../recovery_patched.img
 rm ../r.img
