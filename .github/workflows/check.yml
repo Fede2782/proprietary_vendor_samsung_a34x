@@ -226,7 +226,7 @@ jobs:
       - name: Prepare AP and BL for release
         if: env.need_update == 1
         run: |
-          tar vf ${{ env.ap_tar }} --delete boot.img.lz4 recovery.img.lz4 super.img.lz4 vbmeta.img.lz4 vbmeta_system.img.lz4 init_boot.img.lz4 vendor_boot.img.lz4
+          tar vf ${{ env.ap_tar }} --delete boot.img.lz4 recovery.img.lz4 super.img.lz4 vbmeta.img.lz4 vbmeta_system.img.lz4 init_boot.img.lz4 vendor_boot.img.lz4 meta-data
           md5sum ${{ env.ap_tar }} | sed "s/  .*\//  /;s/\.md5$//" >> ${{ env.ap_tar }}
           tar vf ${{ env.bl_tar }} --delete vbmeta.img.lz4
           md5sum ${{ env.bl_tar }} | sed "s/  .*\//  /;s/\.md5$//" >> ${{ env.bl_tar }}
