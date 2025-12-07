@@ -19,19 +19,10 @@ jobs:
             csc: "EUX"
             omc: "OXM"
             imei: "351648447351835"
-          # A34X_SEA_OPEN
-          #- model: "SM-A346E"
-          #  csc: "INS"
-          #  omc: "ODM"
-          #  imei: "350386300261830"
-          #- model: "SM-A346M"
-          #  csc: "MXO"
-          #  omc: "OWO"
-          #  imei: "350650060111117"
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.1
         with:
           submodules: true
 
@@ -52,7 +43,7 @@ jobs:
 
       - name: Set up Node.js
         if: env.need_update == 1
-        uses: actions/setup-node@v4.2.0
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: 'latest'
 
@@ -120,8 +111,13 @@ jobs:
           lz4 -d vbmeta.img.lz4 vbmeta.img
           rm vbmeta.img.lz4
           printf "$(printf '\\x%02X' 3)" | dd of="vbmeta.img" bs=1 seek=123 count=1 conv=notrunc &> /dev/null
-          tar cvf ${{ env.latest_shortversion }}_patched_vbmeta.tar vbmeta.img
-          rm vbmeta.img
+          FILE_NAME="${{ env.latest_shortversion }}_patched_vbmeta"
+          lz4 -B6 --content-size -q "vbmeta.img" "vbmeta.img.lz4"
+          tar cvf "$FILE_NAME.tar" vbmeta.img.lz4
+          CHECKSUM="$(md5sum "$FILE_NAME.tar" | cut -d " " -f 1 | sed 's/ //')"
+          echo -n "$CHECKSUM" >> "$FILE_NAME.tar" \
+            && echo "  $FILE_NAME.tar" >> "$FILE_NAME.tar" \
+            && mv "$FILE_NAME.tar" "$FILE_NAME.tar.md5"
 
       - name: Extract vendor partitions and create lpdump
         if: env.need_update == 1
@@ -143,10 +139,7 @@ jobs:
           [[ -e vendor_dlkm.img ]] && zip ${{ env.latest_shortversion }}_vendor_dlkm.zip vendor_dlkm.img
           [[ -e system_dlkm.img ]] && zip ${{ env.latest_shortversion }}_system_dlkm.zip system_dlkm.img
           [[ -e odm_dlkm.img ]] && zip ${{ env.latest_shortversion }}_odm_dlkm.zip odm_dlkm.img
-          #[[ -e vendor.img ]] && rm vendor.img
-          #[[ -e vendor_dlkm.img ]] && rm vendor_dlkm.img
-          #[[ -e system_dlkm.img ]] && rm system_dlkm.img
-          #[[ -e odm_dlkm.img ]] && rm odm_dlkm.img
+          [[ -e odm_dlkm.img ]] && zip ${{ env.latest_shortversion }}_odm.zip odm.img
 
       - name: Extract TA blobs for TWRP decryption
         if: env.need_update == 1
@@ -194,35 +187,19 @@ jobs:
           lz4 -d recovery.img.lz4 recovery.img
           rm recovery.img.lz4
 
-      - name: Generate fastbootD recovery with adb (user) enabled
+      - name: Generate patched recovery
         if: env.need_update == 1
         run: |
           export PATH=$PATH:$(pwd)/tools/bin
-          PATH=$PATH:$(pwd)/tools/bin bash tools/bin/fastbootd_adb_patch.sh
-          mkdir recovery_patched && cd recovery_patched
-          cp ../recovery_patched.img recovery.img
-          lz4 -B6 --content-size -q --rm recovery.img recovery.img.lz4
-          tar -c --format=gnu -f "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" -- *.lz4
-          CHECKSUM="$(md5sum "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" | cut -d " " -f 1 | sed 's/ //')"
-          echo -n "$CHECKSUM" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
-            && echo "  ${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" >> "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" \
-            && mv "${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar" "../${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar.md5"
-          cd .. && rm -rf recovery_patched
-
-      - name: Generate fastbootD recovery
-        if: env.need_update == 1
-        run: |
-          export PATH=$PATH:$(pwd)/tools/bin
-          PATH=$PATH:$(pwd)/tools/bin bash tools/bin/fastbootd_patch.sh
-          mkdir recovery_patched && cd recovery_patched
-          cp ../recovery_patched.img recovery.img
-          lz4 -B6 --content-size -q --rm recovery.img recovery.img.lz4
-          tar -c --format=gnu -f "${{ env.latest_shortversion }}_recovery_fastbootd.tar" -- *.lz4
-          CHECKSUM="$(md5sum "${{ env.latest_shortversion }}_recovery_fastbootd.tar" | cut -d " " -f 1 | sed 's/ //')"
-          echo -n "$CHECKSUM" >> "${{ env.latest_shortversion }}_recovery_fastbootd.tar" \
-            && echo "  ${{ env.latest_shortversion }}_recovery_fastbootd.tar" >> "${{ env.latest_shortversion }}_recovery_fastbootd.tar" \
-            && mv "${{ env.latest_shortversion }}_recovery_fastbootd.tar" "../${{ env.latest_shortversion }}_recovery_fastbootd.tar.md5"
-          cd .. && rm -rf recovery_patched
+          cp recovery.img patched_recovery.img
+          PATH=$PATH:$(pwd)/tools/bin bash tools/bin/recovery_patch.sh patched_recovery.img
+          FILE_NAME="${{ env.latest_shortversion }}_patched_recovery"
+          lz4 -B6 --content-size -q "patched_recovery.img" "recovery.img.lz4"
+          tar cvf "$FILE_NAME.tar" recovery.img.lz4
+          CHECKSUM="$(md5sum "$FILE_NAME.tar" | cut -d " " -f 1 | sed 's/ //')"
+          echo -n "$CHECKSUM" >> "$FILE_NAME.tar" \
+            && echo "  $FILE_NAME.tar" >> "$FILE_NAME.tar" \
+            && mv "$FILE_NAME.tar" "$FILE_NAME.tar.md5"
 
       - name: Create a firmware package for UN1CA build system.
         if: env.need_update == 1
@@ -275,7 +252,7 @@ jobs:
 
       - name: Upload release assets
         if: env.need_update == 1
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v2.5.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -289,11 +266,12 @@ jobs:
             ${{ env.home_csc_tar }}
             ${{ env.latest_shortversion }}_kernel.tar
             ${{ env.pit_file }}
-            ${{ env.latest_shortversion }}_patched_vbmeta.tar
+            ${{ env.latest_shortversion }}_patched_vbmeta.tar.md5
             ${{ env.latest_shortversion }}_vendor.zip
             ${{ env.latest_shortversion }}_vendor_dlkm.zip
             ${{ env.latest_shortversion }}_system_dlkm.zip
-            ${{ env.latest_shortversion }}_odm_dlkm.zip            
+            ${{ env.latest_shortversion }}_odm_dlkm.zip
+            ${{ env.latest_shortversion }}_odm.zip                  
             ${{ env.latest_shortversion }}_TA_blobs.tar
             boot.img
             vendor_boot.img
@@ -301,7 +279,6 @@ jobs:
             dtbo.img
             recovery.img
             lpdump
-            ${{ env.latest_shortversion }}_recovery_fastbootd.tar.md5
-            ${{ env.latest_shortversion }}_recovery_fastbootd_adb.tar.md5
             ${{ env.latest_shortversion }}_mtk_fw.tar.md5
             ${{ env.latest_shortversion }}_UN1CA_firmware_package.zip
+            ${{ env.latest_shortversion }}_patched_recovery.tar.md5
