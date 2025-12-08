@@ -113,10 +113,10 @@ echo "    setprop service.adb.root 1" >> "system/etc/init/hw/init.rc"
 
 magiskboot cpio '../ramdisk.cpio' 'add 755 system/bin/recovery system/bin/recovery'
 magiskboot cpio '../ramdisk.cpio' 'add 755 system/bin/adbd system/bin/adbd'
-magiskboot cpio '../ramdisk.cpio' 'add 755 system/lib64/libselinux.so system/lib64/libselinux.so'
-magiskboot cpio '../ramdisk.cpio' 'add 755 system/etc/init/hw/init.rc system/etc/init/hw/init.rc'
-magiskboot cpio '../ramdisk.cpio' 'add 755 prop.default prop.default'
+magiskboot cpio '../ramdisk.cpio' 'add 644 system/lib64/libselinux.so system/lib64/libselinux.so'
+magiskboot cpio '../ramdisk.cpio' 'add 644 system/etc/init/hw/init.rc system/etc/init/hw/init.rc'
+magiskboot cpio '../ramdisk.cpio' 'add 644 prop.default prop.default'
 
 cd ..
-PATCHVBMETAFLAG=true magiskboot repack "$OUT_FILE" recovery.img
+magiskboot repack "$OUT_FILE" recovery.img
 mv recovery.img "$OUT_FILE"
