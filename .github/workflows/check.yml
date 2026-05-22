@@ -41,23 +41,34 @@ jobs:
           echo "latest_modemversion=$latest_modem" >> $GITHUB_ENV
           echo "need_update=$need_update" >> $GITHUB_ENV
 
-      - name: Set up Node.js
-        if: env.need_update == 1
-        uses: actions/setup-node@v6.1.0
-        with:
-          node-version: 'latest'
-
       - name: Install dependencies
         if: env.need_update == 1
         run: |
           sudo apt-get update
-          sudo apt-get install -y libprotobuf-dev liblz4-tool zip f2fs-tools linux-modules-extra-$(uname -r)
+          sudo apt-get install -y libprotobuf-dev liblz4-tool zip f2fs-tools linux-modules-extra-$(uname -r) python3 python3-venv
           sudo wget -O /usr/bin/samfirm https://github.com/DavidArsene/samfirm.js/releases/download/v0.3.0/samfirm.js && sudo chmod +x /usr/bin/samfirm
           sudo modprobe erofs f2fs
-      
+
+      - name: Install samloader
+        if: env.need_update == 1
+        run: |
+          python3 -m venv py_env
+          source py_env/bin/activate
+          pip3 install git+https://github.com/ananjaser1211/samloader.git
+          deactivate
+
       - name: Fetch firmware
         if: env.need_update == 1
-        run: samfirm -m ${{ matrix.model }} -r ${{ matrix.csc }} -i ${{ matrix.imei }}
+        run: |
+          source py_env/bin/activate
+          mkdir "${{ matrix.model }}_${{ matrix.csc }}"
+          samloader -m ${{ matrix.model }} -r ${{ matrix.csc }} -i ${{ matrix.imei }} download -O "${{ matrix.model }}_${{ matrix.csc }}"
+          cd "${{ matrix.model }}_${{ matrix.csc }}"
+          unzip "*.zip"
+          rm -rvf "*.zip"
+          cd ..
+          deactivate
+          rm -rf py_env
 
       - name: Get path of files
         if: env.need_update == 1
