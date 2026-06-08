@@ -54,15 +54,7 @@ jobs:
         run: |
           python3 -m venv py_env
           source py_env/bin/activate
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git clone https://github.com/ananjaser1211/samloader.git
-          cd samloader
-          git reset --hard
-          while IFS= read -r i; do
-              git am "$i"
-          done < <(find "$(realpath "../patches")" -type f)
-          pip3 install .
+          pip3 install git+https://github.com/ananjaser1211/samloader.git
           deactivate
 
       - name: Fetch firmware
